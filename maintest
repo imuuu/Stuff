@@ -1,0 +1,128 @@
+import mysql.connector
+db = mysql.connector.connect(host="localhost",
+                             user="dbuser",
+                             passwd="dbpass",
+                             db="whispertest",
+                             buffered=True)
+
+cur=db.cursor()
+
+def position_terrainTypeName(x=None,y=None):
+    if x is None:
+        x="-0"
+    if y is None:
+        y="-0"
+    sql=("select terrain_type.name from terrain_type,player,terrain_square where terrain_type.id=terrain_square.type_id and terrain_square.x=player.x%s and terrain_square.y=player.y%s" % (x,y))
+    print(sql)
+    cur.execute(sql)
+    result=cur.fetchall()[0][0]
+    return result
+def position_terrainTypeid(x=None,y=None):
+    if x is None:
+        x="-0"
+    if y is None:
+        y="-0"
+    sql=("select terrain_type.id from terrain_type,player,terrain_square where terrain_type.id=terrain_square.type_id and terrain_square.x=player.x%s and terrain_square.y=player.y%s" % (x,y))
+    print(sql)
+    cur.execute(sql)
+    result=cur.fetchall()[0][0]
+    return result
+
+def look():
+    sql="select terrain_type.id from terrain_type,player,terrain_square where terrain_type.id=terrain_square.type_id and terrain_square.x=player.x and terrain_square.y=player.y"
+    cur.execute(sql)
+    result=cur.fetchall()[0][0]
+    
+def move_north():
+    sql="select terrain_type.id from terrain_type,player,terrain_square where terrain_type.id=terrain_square.type_id and terrain_square.x=player.x and terrain_square.y=player.y+1"
+    cur.execute(sql)
+    result=cur.fetchall()
+    if len(result)>0:
+        if result[0][0]==5:
+            print("You cant go through",position_terrainTypeName(None,+1))
+        else:
+            sql="UPDATE player SET player.y=player.y+1"
+            cur.execute(sql)
+            pos=position_terrainTypeName()
+        print("You are now",pos)
+    else:
+        print("You can't go there") 
+def move_east():
+    sql="select terrain_type.id from terrain_type,player,terrain_square where terrain_type.id=terrain_square.type_id and terrain_square.x=player.x+1 and terrain_square.y=player.y"
+    cur.execute(sql)
+    result=cur.fetchall()
+    if len(result)>0:
+        if result[0][0]==5:
+            print("You cant go through",position_terrainTypeName(+1,None))
+        else:
+            sql="UPDATE player SET player.x=player.x+1"
+            cur.execute(sql)
+            pos=position_terrainTypeName()
+            print("You are now",pos)
+    else:
+        print("You can't go there")
+        
+def move_south():
+    sql="select terrain_type.id from terrain_type,player,terrain_square where terrain_type.id=terrain_square.type_id and terrain_square.x=player.x and terrain_square.y=player.y-1"
+    cur.execute(sql)
+    result=cur.fetchall()
+    
+    if len(result)>0:
+        if result[0][0]==5:
+            print("You cant go through",position_terrainTypeName(None,-1))
+        else:
+            sql="UPDATE player SET player.y=player.y-1"
+            cur.execute(sql)
+            pos=position_terrainTypeName()
+            print("You are now",pos)
+    else:
+        print("You can't go there")
+    
+def move_west():
+    sql="select terrain_type.id from terrain_type,player,terrain_square where terrain_type.id=terrain_square.type_id and terrain_square.x=player.x-1 and terrain_square.y=player.y"
+    cur.execute(sql)
+    result=cur.fetchall()
+    
+    if len(result)>0:
+        if result[0][0]==5:
+            print("You cant go through",position_terrainTypeName(-1))
+        else:
+            sql="UPDATE player SET player.x=player.x-1"
+            cur.execute(sql)
+            pos=position_terrainTypeName()
+            print("You are now",pos)
+    else:
+        print("You can't go there")
+def parse(playerInput):
+    
+    stringCAP=playerInput.upper() #isot alkukirjaimet
+    
+    if stringCAP=="N":
+        move_north()
+    
+    elif stringCAP=="E":
+        move_east()
+    
+    elif stringCAP=="S":
+        move_south()
+    
+    elif stringCAP=="W":
+        move_west()
+        
+def main():
+    admin=True
+    while True:
+        playerInput=input()
+        if admin==True:
+            
+            if playerInput=="w":
+                playerInput="n"
+            elif playerInput=="d":
+                playerInput="e"
+            elif playerInput=="a":
+                playerInput="w"
+                
+        
+        parse(playerInput)
+    
+main()
