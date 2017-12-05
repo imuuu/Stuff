@@ -14,10 +14,39 @@ NewAreaDescription = [0,"You have arrived at some sort of village, there are mul
 KnownAreaDescription = [0,"You arrive at some kind of small village, you have been here before ","area description", "area description", "You have returned to a familiar area, there is a small church building nearby"]
 visitCounter = [0,0,0,0,0,0]
 
-player_carry_capasity=150
+
 dt=datetime.datetime(1974,6,6,9,0)
 square_side=50 #m
 movement_multiplier=50
+
+#player max stats
+player_carry_capasity=150
+player_max_healt=100
+player_max_fatique=100
+player_max_speed=15
+player_max_attack=100
+
+def help():
+    print('''
+HERE 
+COMES 
+COMMANDS
+    
+    
+    
+    ''')
+def read(item):
+    sql="SELECT item_type.name, item.id,item_type.id FROM item,item_type,player,terrain_square WHERE item.type_id=item_type.id and player.x=terrain_square.x and player.y=terrain_square.y and item.x=terrain_square.x and item.y=terrain_square.y"
+    cur.execute(sql)
+    result=cur.fetchall()
+    for i in range(len(result)):
+        if result[i][0].upper() == item:
+            item_id=result[i][2]
+    sql = "Select item_type.text FROM item_type, item where item_type.ID = item.type_id and item.type_ID='"+ str(item_id) +"'"
+    cur.execute(sql)
+    res = cur.fetchall()
+    print(res)
+    print(res[0][0])
 
 def check_item_type(item):
     sql = ("SELECT item_type.name FROM item_type WHERE item_type.name LIKE '"+item.lower()+"%'")
@@ -28,10 +57,10 @@ def check_item_type(item):
             return True
     print("There isn's such a item called:",item.lower())
     return False      
-def player_carry():
-    sql=("SELECT player.carry FROM player")
+def player_carry_att_speed_hp_fatique():
+    sql=("SELECT player.carry,player.att,player.speed,player.hp,player.fatigue FROM player")
     cur.execute(sql)
-    result=cur.fetchall()[0][0]
+    result=cur.fetchall()
     return result
 def out_of_breath():
     potency = random.randrange(0, 15)
@@ -39,13 +68,15 @@ def out_of_breath():
     return multiplier
 
 def inventory():
-    sql = "SELECT item_type.name FROM item,item_type WHERE item.type_id=item_type.id and item.player_ID>0"
+    sql = "SELECT item_type.name, COUNT(*) FROM item,item_type WHERE item.type_id=item_type.id and item.player_ID>0 GROUP BY item_type.name"
     cur.execute(sql)
     result = cur.fetchall()
-    print("Your items(%d) are following: " % (len(result)))
-    for i in range(len(result)):
-        print(result[i][0])
-        
+    if len(result)>0:
+        print("You are carrying")
+        for i in range(len(result)):
+            print((result[i][0]+"(%s)")%(result[i][1]))
+    else:
+        print("You don't carry any items with you")   
 def add_time(distance,terrain_type_id):
     
     sql=("SELECT terrain_type.movement_difficulty FROM terrain_type WHERE terrain_type.id=%i" % terrain_type_id)
@@ -66,7 +97,34 @@ def add_time(distance,terrain_type_id):
     
 def show_time():
     print(dt)
-    
+def update_player_weight(totalWeight):
+    if totalWeight<=player_carry_capasity:
+        sql=(("UPDATE player SET player.carry=%d WHERE player.ID=1") % totalWeight)
+        cur.execute(sql)
+    if totalWeight<0:
+        sql=(("UPDATE player SET player.carry=0 WHERE player.ID=1"))
+        cur.execute(sql)
+def update_player_healt(totalHealt):
+    if totalHealt<=player_max_healt and totalHealt>=0:
+        sql=(("UPDATE player SET player.hp=%d WHERE player.ID=1") % totalHealt)
+        cur.execute(sql)
+    elif totalHealt<0:
+        print("You lost the game!")
+    else:
+        sql=(("UPDATE player SET player.hp=%d WHERE player.ID=1") % player_max_healt)
+        cur.execute(sql)
+def update_player_fatique(totalFatique):
+    if totalFatique<=player_max_fatique:
+        sql=(("UPDATE player SET player.fatique=%d WHERE player.ID=1") % totalFatique)   
+        cur.execute(sql)
+def update_player_speed(totalSpeed):
+    if totalSpeed<=player_max_speed:
+        sql=(("UPDATE player SET player.speed=%d WHERE player.ID=1") % totalSpeed) 
+        cur.execute(sql)
+def update_player_attack(totalAttack):
+    if totalAttack<=player_max_attack:
+        sql=(("UPDATE player SET player.att=%d WHERE player.ID=1") % totalAttack)
+        cur.execute(sql)
 def drop_item(item):
     sql=("SELECT item_type.name,item.id FROM item,item_type WHERE item.type_id=item_type.id and item.player_ID>0")
     cur.execute(sql)
@@ -79,9 +137,8 @@ def drop_item(item):
             cur.execute(sql)
             item_weight=cur.fetchall()[0][0]
             
-            totalWeight=(player_carry()-item_weight)
-            sql=("UPDATE player SET player.carry=%d WHERE player.ID=1" % totalWeight)
-            cur.execute(sql)
+            totalWeight=((player_carry_att_speed_hp_fatique()[0][0])-item_weight)
+            update_player_weight(totalWeight)
             
             pos=player_position()
             sql=("UPDATE item SET item.x=%i, item.y=%i, item.player_ID=NULL WHERE item.id=%i" % (pos[0][0],pos[0][1],item_id))
@@ -103,7 +160,7 @@ def pick_up(item):
             cur.execute(sql)
             item_weight=cur.fetchall()[0][0]
             
-            totalWeight=(player_carry()+item_weight)
+            totalWeight=((player_carry_att_speed_hp_fatique()[0][0])+item_weight)
             if totalWeight<player_carry_capasity:
                 sql=("UPDATE player SET player.carry=%d WHERE player.ID=1" % totalWeight)
                 cur.execute(sql)
@@ -112,7 +169,7 @@ def pick_up(item):
                 cur.execute(sql)
                 print("You took", result[i][0])
             else:
-                print("You can't get more weight to your poor back!")
+                print("You cant get more weight to your poor back!")
             break
 
 def player_position():
@@ -237,7 +294,7 @@ def move_east():
             elif "E" in res[0][1]:
                 print("You can't go through a wall, dummy")
             else:
-                sql= "UPDATE player SET player.x = player.x -1"
+                sql= "UPDATE player SET player.x = player.x +1"
                 cur.execute(sql)
                 sql="select terrain_type.name from terrain_type, terrain_square, player where terrain_type.ID=terrain_square.type_id and terrain_square.x=player.x and terrain_square.y=player.y"
                 cur.execute(sql)
@@ -293,32 +350,227 @@ def examine_area():
     result=cur.fetchall()
     if len(result)>0:
         print("You found the following items when searching the area ")
-    for i in range(len(result)):
-        print(result[i][0])
+        for i in range(len(result)):
+            print(result[i][0])
+    else:
+        print("There is nothing in this area")
+def extended_look_desription(terrainTypeId,distance,frontTerraintypeId):
+    x=random.randint(1,2)
+    place=((distance*square_side)-(square_side/2))
+    if terrainTypeId==0:
+        if frontTerraintypeId==3:
+            print("There is fall about %im away" % place)
+        else:
+            print("There is water about %im away" % (place))
+    elif terrainTypeId==1:
+        if x==1:
+            print("ja noin %im paassa nakyy pienta avartunutta valoa" % (place))
+        elif x==2:
+            print("ja valo pilkistaa noin %im paasta" % (place))
+    elif terrainTypeId==2:
+        print("Forest starts about %im away" % (place))
+    elif terrainTypeId==3:
+        print("There is mountains about %im away" % place)
+    elif terrainTypeId==4:
+        if frontTerraintypeId==1:
+            print("There starts beach about %im away" % place)
+        else:
+            print("There is something yellow on background about %im away" % (place))
+    elif terrainTypeId==5:
+        if frontTerraintypeId==2:
+            print("Forest go thicker %im away" % place)
+        else:
+            print("There is starts thick Spruce Forest %im away" % place)
+    elif terrainTypeId==10 or terrainTypeId==6 or terrainTypeId==7 or terrainTypeId==8 or terrainTypeId==9:
+        print("There is some kind of large object blocking the view %im away" % place)
 def extended_look(direction):
-    posx=player_position()[0][0]
-    posy=player_position()[0][1]
     getTerraintypeId=0
     distance=0
-    print(getTerraintypeId)
-    print(distance)
     if direction.upper()=="NORTH":
-        for i in range(1,10):
-            sql=("SELECT terrain_type.Id FROM terrain_type,terrain_square,player WHERE terrain_type.ID=terrain_square.type_id and terrain_square.y=player.y and terrain_square.x=player.x+%i" % i)
+        
+        sql=("SELECT terrain_type.Id FROM terrain_type,terrain_square,player WHERE terrain_type.ID=terrain_square.type_id and terrain_square.y=player.y+1 and terrain_square.x=player.x")
+        cur.execute(sql)
+        result2=cur.fetchall()
+        if len(result2)>0:
+            for i in range(1,100):
+                sql=("SELECT terrain_type.Id FROM terrain_type,terrain_square,player WHERE terrain_type.ID=terrain_square.type_id and terrain_square.y=player.y+%i and terrain_square.x=player.x" % i)
+                cur.execute(sql)
+                result=cur.fetchall()
+                if len(result)>0:
+                    if i==1:
+                        getTerraintypeId=result[0][0]
+                    if getTerraintypeId==result[0][0]:
+                        distance+=1
+                    else:
+                        break
+
+            distance+=1       
+            sql=("SELECT terrain_type.name FROM terrain_type WHERE terrain_type.id=%i" % getTerraintypeId)
             cur.execute(sql)
             result=cur.fetchall()
-            if i==1:
-                getTerraintypeId=result[0][0]
-            if getTerraintypeId==result[0][0]:
-                distance+=1
-    print(getTerraintypeId)
-    print(distance)
-    
+            lastResult=result
+                
+                
+            if getTerraintypeId==1 or getTerraintypeId==2 or getTerraintypeId==3 or getTerraintypeId==4:
+                print("Front of you there is",lastResult[0][0])
+                sql=("SELECT terrain_type.Id FROM terrain_type,terrain_square,player WHERE terrain_type.ID=terrain_square.type_id and terrain_square.y=player.y+%i and terrain_square.x=player.x" % distance)
+                cur.execute(sql)
+                result=cur.fetchall()
+                if len(result)>0:
+                    extended_look_desription(result[0][0],distance,lastResult[0][0])
+                else:
+                    extended_look_desription(0, distance,lastResult[0][0])
+            else:
+                print("There is %s blocking your vission" % result[0][0])
+    if direction.upper()=="SOUTH":
+        
+        sql=("SELECT terrain_type.Id FROM terrain_type,terrain_square,player WHERE terrain_type.ID=terrain_square.type_id and terrain_square.y=player.y-1 and terrain_square.x=player.x")
+        cur.execute(sql)
+        result2=cur.fetchall()
+        if len(result2)>0:
+            for i in range(1,100):
+                sql=("SELECT terrain_type.Id FROM terrain_type,terrain_square,player WHERE terrain_type.ID=terrain_square.type_id and terrain_square.y=player.y-%i and terrain_square.x=player.x" % i)
+                cur.execute(sql)
+                result=cur.fetchall()
+                if len(result)>0:
+                    if i==1:
+                        getTerraintypeId=result[0][0]
+                    if getTerraintypeId==result[0][0]:
+                        distance+=1
+                    else:
+                        break
+
+            distance+=1       
+            sql=("SELECT terrain_type.name FROM terrain_type WHERE terrain_type.id=%i" % getTerraintypeId)
+            cur.execute(sql)
+            result=cur.fetchall()
+            lastResult=result
+                
+                
+            if getTerraintypeId==1 or getTerraintypeId==2 or getTerraintypeId==3 or getTerraintypeId==4:
+                print("Front of you there is",lastResult[0][0])
+                sql=("SELECT terrain_type.Id FROM terrain_type,terrain_square,player WHERE terrain_type.ID=terrain_square.type_id and terrain_square.y=player.y-%i and terrain_square.x=player.x" % distance)
+                cur.execute(sql)
+                result=cur.fetchall()
+                if len(result)>0:
+                    extended_look_desription(result[0][0],distance,lastResult[0][0])
+                else:
+                    extended_look_desription(0, distance,lastResult[0][0])
+            else:
+                print("There is %s blocking your vission" % result[0][0])
+    if direction.upper()=="WEST":
+        
+        sql=("SELECT terrain_type.Id FROM terrain_type,terrain_square,player WHERE terrain_type.ID=terrain_square.type_id and terrain_square.y=player.y and terrain_square.x=player.x-1")
+        cur.execute(sql)
+        result2=cur.fetchall()
+        if len(result2)>0:
+            for i in range(1,100):
+                sql=("SELECT terrain_type.Id FROM terrain_type,terrain_square,player WHERE terrain_type.ID=terrain_square.type_id and terrain_square.y=player.y and terrain_square.x=player.x-%i" % i)
+                cur.execute(sql)
+                result=cur.fetchall()
+                if len(result)>0:
+                    if i==1:
+                        getTerraintypeId=result[0][0]
+                    if getTerraintypeId==result[0][0]:
+                        distance+=1
+                    else:
+                        break
+
+            distance+=1       
+            sql=("SELECT terrain_type.name FROM terrain_type WHERE terrain_type.id=%i" % getTerraintypeId)
+            cur.execute(sql)
+            result=cur.fetchall()
+            lastResult=result
+                
+                
+            if getTerraintypeId==1 or getTerraintypeId==2 or getTerraintypeId==3 or getTerraintypeId==4:
+                print("Front of you there is",lastResult[0][0])
+                sql=("SELECT terrain_type.Id FROM terrain_type,terrain_square,player WHERE terrain_type.ID=terrain_square.type_id and terrain_square.y=player.y and terrain_square.x=player.x-%i" % distance)
+                cur.execute(sql)
+                result=cur.fetchall()
+                if len(result)>0:
+                    extended_look_desription(result[0][0],distance,lastResult[0][0])
+                else:
+                    extended_look_desription(0, distance,lastResult[0][0])
+            else:
+                print("There is %s blocking your vission" % result[0][0])
+    if direction.upper()=="EAST":
+        
+        sql=("SELECT terrain_type.Id FROM terrain_type,terrain_square,player WHERE terrain_type.ID=terrain_square.type_id and terrain_square.y=player.y and terrain_square.x=player.x+1")
+        cur.execute(sql)
+        result2=cur.fetchall()
+        if len(result2)>0:
+            for i in range(1,100):
+                sql=("SELECT terrain_type.Id FROM terrain_type,terrain_square,player WHERE terrain_type.ID=terrain_square.type_id and terrain_square.y=player.y and terrain_square.x=player.x+%i" % i)
+                cur.execute(sql)
+                result=cur.fetchall()
+                if len(result)>0:
+                    if i==1:
+                        getTerraintypeId=result[0][0]
+                    if getTerraintypeId==result[0][0]:
+                        distance+=1
+                    else:
+                        break
+
+            distance+=1       
+            sql=("SELECT terrain_type.name FROM terrain_type WHERE terrain_type.id=%i" % getTerraintypeId)
+            cur.execute(sql)
+            result=cur.fetchall()
+            lastResult=result
+                
+                
+            if getTerraintypeId==1 or getTerraintypeId==2 or getTerraintypeId==3 or getTerraintypeId==4:
+                print("Front of you there is",lastResult[0][0])
+                sql=("SELECT terrain_type.Id FROM terrain_type,terrain_square,player WHERE terrain_type.ID=terrain_square.type_id and terrain_square.y=player.y and terrain_square.x=player.x+%i" % distance)
+                cur.execute(sql)
+                result=cur.fetchall()
+                if len(result)>0:
+                    extended_look_desription(result[0][0],distance,lastResult[0][0])
+                else:
+                    extended_look_desription(0, distance,lastResult[0][0])
+            else:
+                print("There is %s blocking your vission" % result[0][0])
+def player_stats():
+    sql=("SELECT player.carry, player.att,player.speed,player.hp,player.fatigue FROM player")
+    cur.execute(sql)
+    result=cur.fetchall()
+    print(('''
+==============
+|Healt    %s     
+|Carrying %s   
+|Attack   %s   
+|Fatiogue %s
+|Speed    %s   
+==============   
+    ''') % (result[0][3],result[0][0],result[0][1],result[0][4],result[0][2]))
+def eat(foodName):
+    sql=(("SELECT item_type.name,item.id,item_type.healing,item_type.weight, COUNT(*) FROM item,item_type WHERE item.type_id=item_type.id and item.player_ID>0 and item_type.name LIKE '"+foodName.lower()+"%' GROUP BY item_type.name"))
+    cur.execute(sql)
+    result=cur.fetchall()
+    if len(result)>0:
+        if result[0][2]!=0:
+            itemID=result[0][1]
+            
+            itemHealing=result[0][2]
+            totalHealt=((player_carry_att_speed_hp_fatique()[0][3])+itemHealing)
+            update_player_healt(totalHealt)
+            
+            item_weight=result[0][3]
+            totalWeight=((player_carry_att_speed_hp_fatique()[0][0])-item_weight)
+            update_player_weight(totalWeight)
+            
+            sql=(("DELETE FROM item WHERE item.id=%i") % itemID)
+            cur.execute(sql)
+        else:
+            print("You can't eat %s or do you have metal teeth or something?" % result[0][0])
+    else:
+        print(("You don't have item called %s in your inventory") % (foodName.lower()))
 def parse(playerInput):
     playerCaps = playerInput.upper()
     filter = [".", ",",":"," an "," a ","move ", "go ", " in ", " out ", " the ", " and "]
     filteredText = ''.join([c for c in playerCaps if c not in filter])
     playerText = split_line(filteredText)
+    print(playerText)
     if len(playerText)<1:
         print("Are you an empty vessel?")
     elif playerText[0]== "N" or playerText[0]=="NORTH":
@@ -330,68 +582,102 @@ def parse(playerInput):
     elif (playerText[0])== "E" or playerText[0]=="EAST":
         move_east()
     elif (playerText[0])== "LOOK" or playerText[0]=="L" or playerText[0]=="WATCH" or playerText[0]=="SEE":
-        look()
+        if len(playerText)>1:
+            if (playerText[0])=="LOOK" and (playerText[1])=="NORTH" or (playerText[1])=="SOUTH" or (playerText[1])=="WEST" or (playerText[1])=="EAST":
+                extended_look(playerText[1])
+        else:
+            look()
     elif (playerText[0])=="I":
         inventory()
+    
     elif (playerText[0])=="DROP":
-        item=""       
+        item=""
         for i in range(len(playerText)):
             if i>=1:
                 if i<(len(playerText)-1):
                     item+=(playerText[i]+" ")
                 else:
                     item+=(playerText[i])
-            drop_item(item)
+        drop_item(item)
         
     elif (playerText[0])=="TIME":
         show_time()
     elif (playerText[0])== "EXAMINE":
-        if(playerText[1])== "AREA":
-            examine_area()
-    elif (playerText[0]) == "TAKE" or "PICK" or "PICKUP" or "GRAB":
+        if len(playerText)>1:
+            if(playerText[1])== "AREA":
+                    examine_area()
+    elif (playerText[0])=="STATS":
+        player_stats()
+    elif (playerText[0])=="HELP":
+        help()
+    elif (playerText[0])=="EAT":
         item=""
-        if(playerText[1]) == "UP" and playerText[0] == "PICK":
-            for i in range(len(playerText)):
-                if i>=2:
-                    if i<(len(playerText)-1):
-                        item+=(playerText[i]+" ")
-                    else:
-                        item+=(playerText[i])
-            
-            if check_item_type(item)==True:
-                pick_up(item)
-            
-        else:
+        if len(playerText)>1:
             for i in range(len(playerText)):
                 if i>=1:
                     if i<(len(playerText)-1):
                         item+=(playerText[i]+" ")
                     else:
                         item+=(playerText[i])
-            
-            if check_item_type(item)==True:
-                pick_up(item)
+            eat(item)
+        else:
+            print("You ment? eat 'name of item'")
+    elif (playerText[0]) == "TAKE" or "PICK" or "PICKUP" or "GRAB":
+        item=""
+        if len(playerText)>1:
+            if(playerText[1]) == "UP" and playerText[0] == "PICK":
+                for i in range(len(playerText)):
+                    if i>=2:
+                        if i<(len(playerText)-1):
+                            item+=(playerText[i]+" ")
+                        else:
+                            item+=(playerText[i])
+                
+                if check_item_type(item)==True:
+                    pick_up(item)
+                
+            else:
+                for i in range(len(playerText)):
+                    if i>=1:
+                        if i<(len(playerText)-1):
+                            item+=(playerText[i]+" ")
+                        else:
+                            item+=(playerText[i])
+                
+                if check_item_type(item)==True:
+                    pick_up(item)
     #elif (playerText[0])== "KILL" or "ATTACK" or "ENGAGE" or "FIGHT" or "BATTLE":
         #actions
     #elif (playerText[0])== "I" or "INVENTORY" or "BAG" or "ITEMS":
         #display inventory
-    #elif (playerText[0])== "STATS" or "PLAYER" or "CHARACTER" or "CHAR":
-        #display player info
+    
     #elif (playerText[0])== "EXAMINE" or "INSPECT" or "STUDY" or "ANALYZE":
         #display info of enemy in the map
-    #elif (playerText[0])== "READ":
-        #display text
+    elif (playerText[0])== "READ":
+        item=""
+        for i in range(1,len(playerText)):
+            if i<(len(playerText)-1):
+                item+=(playerText[i]+" ")
+            else:
+                item+=(playerText[i])
+        print(item)
+        if check_item_type(item)==True:
+            read(item)
     #elif (playerText[0])== "S" or "SOUTH":
         #actions
     #elif (playerText[0])== "S" or "SOUTH":
         #actions
 
 def main():
-    north="north"
-    extended_look(north)
+    update_player_healt(4)
     while True:
+        #player_stats()
         #out_of_breath()
         #print(player_carry())
+        
+        #print(player_carry_att_speed_hp_fatique()[0][1])
+        #eat("backpack")
+        print(player_position())
         playerInput = input()
         parse(playerInput)
     
