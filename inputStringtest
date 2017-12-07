@@ -1,0 +1,40 @@
+
+def split_line(text):
+    words = text.split()
+    return words
+playerInput=input()
+playerCaps = playerInput.upper()
+filter = [".", ",",":"," an "," a ","move ", "go ", " in ", " out ", " the ", " and "]
+filteredText = ''.join([c for c in playerCaps if c not in filter])
+playerText = split_line(filteredText)
+
+print(playerText)
+item=""
+for i in range(len(playerText)):
+    
+            if i>=1:
+                if i<(len(playerText)-1):
+                    item+=(playerText[i]+" ")
+                else:
+                    item+=(playerText[i])
+pos=item.find("+")
+if item[(pos-1)]==" " and item[(pos+1)]==" ":
+    newitem=item[:(pos-1)]+item[pos:]
+    print("newitem",newitem)
+    newitem2=newitem[:(pos)]+newitem[(pos+1):]
+
+elif item[(pos-1)]==" " and item[(pos+1)]!=" ":
+    newitem=item[:(pos-1)]+item[pos:]
+    print("newitem",newitem)
+    newitem2=newitem[:(pos)]+newitem[(pos):]
+
+elif item[(pos-1)]!=" " and item[(pos+1)]==" ":
+    newitem=item[:(pos)]+item[pos:]
+    print("newitem",newitem)
+    newitem2=newitem[:(pos+1)]+newitem[(pos+2):]
+else:
+    newitem2=item
+
+pos2=newitem2.find("+")    
+item1=newitem2[0:pos2]
+item2=newitem2[(pos2+1):len(newitem2)]
