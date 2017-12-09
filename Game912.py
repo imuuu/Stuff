@@ -826,7 +826,116 @@ def randomItemDrops():
     rareItemIds=[6,9,71,47,44,37,76,22,20,50,5,92,93,95,103,105,108]
     legendaryItemIds=[25,19,9,90,49,42,97,100,101,102,104]
     
-    
+def combat(enemyName):
+    enemyName=enemyName.lower()
+    sql=(("SELECT enemy.id,enemy_type.id, enemy_type.name,enemy_type.hp,enemy_type.att,enemy_type.speed,enemy_type.description, enemy_type.description2,enemy_type.seen FROM enemy,enemy_type,player,terrain_square WHERE enemy.type_id=enemy_type.id and player.x=terrain_square.x and player.y=terrain_square.y and enemy.x=terrain_square.x and enemy.y=terrain_square.y and enemy_type.name='%s'")% (enemyName))    
+    cur.execute(sql)
+    enemyINFO=cur.fetchall()
+    if len(enemyINFO)>0:
+        print("Attack is starting...")
+        enemyTypeID=enemyINFO[0][1]
+        enemyID=enemyINFO[0][0]
+        enemyName=enemyINFO[0][2]
+        enemyHP=enemyINFO[0][3]
+        enemyAtt=enemyINFO[0][4]
+        enemySpeed=enemyINFO[0][5]
+        
+        playerHP=player_carry_att_speed_hp_fatique()[0][0]
+        playerAtt=player_carry_att_speed_hp_fatique()[0][0]
+        playerSpeed=player_carry_att_speed_hp_fatique()[0][0]
+        
+        x="."
+        for i in range(1,4):
+            time.sleep(1.5)
+            print(x*i)
+        print("You are in combat with",enemyName)
+        if playerSpeed<enemySpeed:
+            print("and you were faster than enemy, you hit",enemyName)
+            enemyHP-=playerAtt
+        else:
+            print("and got hit by it")
+            playerHP-=enemyAtt
+        for i in range(1,4):
+            time.sleep(1)
+            print(x*i)
+        human='''             x====x
+             |head|            
+        x====x====x====x
+        |hand|body|hand|            
+        x====x====x====x     
+             |legs|       
+             x====x
+             |feet|
+             x====x    '''
+        handlesshuman='''             x====x
+             |head|            
+             x====x
+             |body|            
+             x====x     
+             |legs|       
+             x====x
+             |feet|
+             x====x    '''
+        leglesshuman='''             x====x
+             |head|            
+        x====x====x====x
+        |hand|body|hand|            
+        x====x====x====x     
+             ||||||    '''
+        fourlegs='''       xx====x====x====x====x
+      x |====|body|====|head|
+     x  x====x====x====x====x
+        |legs||   |legs||
+        x====xx   x====xx
+        '''
+        bird='''             x====x
+             |head|            
+             x====x
+            x|body|x            
+           x x====x x    
+             |legs|       
+             x====x
+                    '''
+        xx=0
+        while playerHP>0 or enemyHP>0:
+            if xx==0:
+                print("\n"*100)
+                xx=1
+            else:
+                x="."
+                for i in range(1,5):
+                    time.sleep(0.5)
+                    print(x*i)
+                print("\n"*100)
+            
+            print("\t    Healt:%i"%enemyHP)
+            if enemyTypeID in [1,2]:
+                print(human)
+                hitlist=["head","hand","body","legs","feet"]
+            elif enemyTypeID==4:
+                print(handlesshuman)
+                hitlist=["head","body","legs","feet"]
+            elif enemyTypeID==3:
+                print(leglesshuman)
+                hitlist=["head","hand","body"]
+            elif enemyTypeID in [5,6,7,8,9]:
+                print(fourlegs)
+                hitlist=["head","body","legs","feet"]
+            elif enemyTypeID==10:
+                print(bird)
+                hitlist=["head","body","legs"]
+            print()
+            print("You are combat with",enemyName)
+            playerINPUT=input("Where you wanna hit: ")
+            playerINPUT.lower()
+            if playerINPUT in hitlist:
+                print("hitting...")
+            else:
+                print("you didnt hit")
+        
+        
+    else:   
+        print("There isn't that kind of character in area")
 def enemySpawn():
     
    
@@ -835,13 +944,17 @@ def enemySpawn():
     cur.execute(sql)
     enemies=cur.fetchall()
     
+    sql=("SELECT terrain_type.Id FROM terrain_type,terrain_square,player WHERE terrain_type.ID=terrain_square.type_id and terrain_square.y=player.y and terrain_square.x=player.x")
+    cur.execute(sql)
+    result=cur.fetchall()
+    
     if len(enemies)>1: #delete all other enemies expect one
         for i in range(len(enemies)-1):
             id=enemies[(i+1)][0]
             sql=("DELETE FROM enemy WHERE id=%i" % id)
             cur.execute(sql)
     
-    elif len(enemies)<1:
+    elif len(enemies)<1 and (result[0][0]) in [1,2,3,4]:
         sql=("SELECT MAX(enemy.id) FROM enemy")
         cur.execute(sql)
         newId=(cur.fetchall()[0][0]+1)
@@ -859,7 +972,7 @@ def enemySpawn():
     enemies=cur.fetchall()
    
     
-    if len(enemies)>0 and (enemies[0][6]) in [1,2,3,4]:
+    if len(enemies)>0:
         seen=enemies[0][9]
         sql=("UPDATE enemy_type SET seen=1 WHERE id=%i" % enemies[0][1])
         cur.execute(sql)
@@ -888,11 +1001,21 @@ def enemySpawn():
                     print(enemies[0][2]+" sees you")
                 else:
                     print(str(enemies[0][7])+" sees you")
-                if timeToReachPlayer<=2:
+                if timeToReachPlayer<=10:
                     if (enemies[0][1])!=3:
-                        print("it is runing towards you aggressively, you don't have time to react")
+                        xxx=1
+                        print("it is running towards you aggressively, you don't have time to react")
                     else:
+                        xxx=random.randint(1,2)
                         print("it is crawling towards you aggressively, you don't have time to react")
+                    if enemies[0][1]==3 and xxx==2:
+                        x="."
+                        for i in range(1,4):
+                            time.sleep(1)
+                            print(x*i)
+                        print("but thank god this creature fell to hole next to it")
+                    else:   
+                        combat(enemies[0][2])
                 else:
                     #print("but it is moving slowly towards you, and you estimate its gonna reach you in about %is" % (int(timeToReachPlayer)+3))
                     print("but it is moving too slow")
@@ -977,6 +1100,19 @@ def parse(playerInput):
             print("You ment? combine item+item")    
     elif (playerText[0])=="TIME":
         show_time()
+    elif (playerText[0])== "KILL" or "ATTACK" or "ENGAGE" or "FIGHT" or "BATTLE":
+        item=""
+        if len(playerText)>1:
+            for i in range(len(playerText)):
+                if i>=1:
+                    if i<(len(playerText)-1):
+                        item+=(playerText[i]+" ")
+                    else:
+                        item+=(playerText[i])
+            
+            combat(item)
+        else:
+            print("You meant attack enemy?")
     elif (playerText[0])=="EQUIP":
         item=""
         if len(playerText)>1:
@@ -1053,7 +1189,7 @@ def parse(playerInput):
                 
                 if check_item_type(item)==True:
                     pick_up(item)
-    #elif (playerText[0])== "KILL" or "ATTACK" or "ENGAGE" or "FIGHT" or "BATTLE":
+    
         #actions
     #elif (playerText[0])== "I" or "INVENTORY" or "BAG" or "ITEMS":
         #display inventory
@@ -1078,6 +1214,7 @@ def parse(playerInput):
 def main():
     update_player_healt(4)
     while True:
+        
         
         
         
