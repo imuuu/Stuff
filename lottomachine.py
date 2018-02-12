@@ -73,10 +73,6 @@ def weekTotimes(week):
     print("Seconds:",seconds)
 def main():
     weeks=0
-    days=0
-    hours=0
-    minutes=0
-
     won=False
     hitsToWin=len(ticket)
     if hitss>0:
