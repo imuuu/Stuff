@@ -2,12 +2,12 @@ import random
 
 lottoNumbers = []
 ticket = []
-numbers = 7
+numbers = 5
 between1 = 1
 between2 = 40
 
 keepSameTicket=1
-hitss=6
+hitss=0 #default is 0 so win is max numbers
 
 def checkInlist(number,list):
     if number not in list:
@@ -67,19 +67,22 @@ def weekTotimes(week):
 
     print("Years:",years)
     print("Months:",months)
+    print("Weeks:",week)
     print("Days:",days)
     print("Hours:",hours)
     print("Minutes:",minutes)
     print("Seconds:",seconds)
 def main():
     weeks=0
+
+
     won=False
     hitsToWin=len(ticket)
     if hitss>0:
         hitsToWin=hitss
     while won==False:
         try:
-            print(weeks)
+
             weekTotimes(weeks)
             if keepSameTicket==1:
                 if len(ticket)<=0:
@@ -100,7 +103,7 @@ def main():
             lottoNumbers.clear()
         except KeyboardInterrupt:
             break
-
+        print("======================================")
     print(len(ticket))
 
 main()
