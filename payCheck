@@ -312,7 +312,8 @@ def paydayINFO():
         aaa=int(input("1. %s , 2. %s or 3. Both" % (dateOfWork,getDayString(1))))
 
         if aaa==1:
-            hoursInholidays=allowenceS[2]/60
+            hoursInholidays=(allowenceS[2]/60)
+            doubleInholidaysH=hoursInholidays*dayMultiplier
             if breakL!=None:
                 allowenceS2=allowences(workingC[0],workingC[1],allowenceS[2],breakL[0],breakL[1])
             else:
@@ -320,11 +321,13 @@ def paydayINFO():
 
         elif aaa==2:
             hoursInholidays = ((allowenceS[2]-timeDiffminutes) / 60)*(-1)
+            doubleInholidaysH = hoursInholidays * dayMultiplier
             if breakL!=None:
                 allowenceS2=allowences(0,0,(hoursInholidays*60),breakL[0],breakL[1])
             else:
                 allowenceS2 = allowences(0, 0, (hoursInholidays*60))
         if aaa==3:
+            doubleInholidaysH=workedhours*dayMultiplier
             doubleEvening_allowenceM=eveningAM*dayMultiplier
             doubleNigh_allowenceM=nightAM*dayMultiplier
         else:
