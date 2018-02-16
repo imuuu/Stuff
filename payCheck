@@ -1,0 +1,357 @@
+'''
+CREATE USER 'dbuser'@'localhost' IDENTIFIED BY 'dbpass';
+GRANT SELECT, INSERT, UPDATE, DELETE ON payday.* TO dbuser@localhost;
+'''
+import pymysql
+import datetime
+
+conn = pymysql.connect(host='localhost', port=3306, user='root', passwd='imu', db='paycheck')
+cur = conn.cursor()
+
+
+
+today=datetime.date.today()
+print(today)
+
+dateOfWork=datetime.date.today()
+def datee():
+    global dateOfWork
+    x=0
+    workDate=input("1. Yesterday, 2. Today or 3. Custom: ")
+
+    if workDate=="1":
+        print("Yesterday")
+        tdelta = datetime.timedelta(days=1)
+        datee=(today-tdelta)
+
+    elif workDate=="2":
+        print("Today")
+        datee=today
+
+    else:
+        x=1
+        print("Custom")
+        datee=input("Give date (dd.mm.year): ")
+
+    if x==0:
+        dateX=datee.strftime('%d.%m.%Y')
+    else:
+        dateX=datee
+    dateX=dateOfWork
+    return dateX
+def getDayString(futureOrPast):
+    global dateOfWork
+    if futureOrPast<0:
+        futureOrPast=futureOrPast*(-1)
+    tdelta = datetime.timedelta(days=futureOrPast)
+    if futureOrPast<0:
+        dateOfWork=(dateOfWork-tdelta)
+    else:
+        dateOfWork=(dateOfWork+tdelta)
+    return dateOfWork
+
+def timeDiff(time1,time2):
+    timeA = datetime.datetime.strptime(time1, "%H:%M")
+    timeB = datetime.datetime.strptime(time2, "%H:%M")
+    newTime =timeB - timeA
+    return newTime.seconds/60
+def workingPARTS(working):
+    if working[0:1]!='0' or working[0:2]!='00':
+        startAtHour = working[1:2]
+    else:
+        startAtHour = working[0:2]
+
+    if working[3:4] != '0' or working[3:5] != '00':
+        startAtMinutes = working[4:5]
+    else:
+        startAtMinutes=working[3:5]
+
+    if working[6:7]!='0' or working[6:8]!='00':
+        endsAtHour=working[7:8]
+    else:
+        endsAtHour=working[6:8]
+
+    if working[9:10] != '0' or working[9:11] != '00':
+        endsAtMinutes = working[10:11]
+    else:
+        endsAtMinutes=working[9:11]
+
+def timeType(working):
+    workingList=[]
+    workingList.clear()
+    startAtHour = working[0:2]
+    startAtMinutes = working[3:5]
+    startAt = (startAtHour + ':' + startAtMinutes)
+    workingList.append(startAt) # 0
+
+    endsAtHour = working[6:8]
+    endsAtMinutes = working[9:11]
+    endsAt = (endsAtHour + ':' + endsAtMinutes)
+    workingList.append(endsAt) # 1
+    return workingList
+
+def timeTypeHourMinutes(working):
+    workingListHoursMinutes=[]
+    workingListHoursMinutes.clear()
+
+    startAtHour = working[0:2]
+    startAtMinutes = working[3:5]
+
+    endsAtHour = working[6:8]
+    endsAtMinutes = working[9:11]
+
+    breakAtStartHour = working[12:14]
+    breakAtStartMinutes = working[15:17]
+
+    breakEndsHours = working[18:20]
+    breakEndsMinutes = working[21:23]
+
+    #xx.xx-xx.xx-xx.xx-xx.xx
+
+    workingListHoursMinutes.append(startAtHour)         # 0
+    workingListHoursMinutes.append(startAtMinutes)      # 1
+    workingListHoursMinutes.append(endsAtHour)          # 2
+    workingListHoursMinutes.append(endsAtMinutes)       # 3
+    workingListHoursMinutes.append(breakAtStartHour)    # 4
+    workingListHoursMinutes.append(breakAtStartMinutes) # 5
+    workingListHoursMinutes.append(breakEndsHours)      # 6
+    workingListHoursMinutes.append(breakEndsMinutes)    # 7
+
+    return workingListHoursMinutes
+def getFirstTwo(string):
+    x = string[0:2]
+    return x
+def getThirdFourth(string):
+    x = string[3:5]
+    return x
+def allowences(startAthour,startAtminutes,totalMinutes,breakStarts=None,breakEnds=None):
+    if breakStarts==None or breakEnds==None:
+        breakStarts="None"
+        breakEnds="None"
+    else:
+        breakStartsH=int(getFirstTwo(breakStarts))
+        breakStartsM=int(getThirdFourth(breakStarts))
+        breakEndsH=int(getFirstTwo(breakEnds))
+        breakEndsM=int(getThirdFourth(breakEnds))
+    allowences=[]
+    allowences.clear()
+    hourr=int(startAthour)
+    minutes=int(startAtminutes)
+    print("hour",hourr)
+    print("minutes",minutes)
+
+
+    evening_allowenceH=0
+    night_allowenceH=0
+    evening_allowence_inside_break=0
+    night_allowence_inside_break=0
+    firsDayMinutes=0
+
+    sql = ("SELECT profiles.evening_allowence_starts, profiles.evening_allowence_ends FROM profiles Where profiles.id=1")
+    cur.execute(sql)
+    evening_allowence = cur.fetchall()
+    print(evening_allowence)
+
+
+    eveningStartsH=int(getFirstTwo(evening_allowence[0][0]) )    #gets hours
+    eveningStartsM=int(getThirdFourth(evening_allowence[0][0]))  #gets minutes
+    eveningEndsH=int(getFirstTwo(evening_allowence[0][1]))
+    eveningEndsM=int(getThirdFourth(evening_allowence[0][1]))
+
+    print(eveningStartsH)
+    print(eveningStartsM)
+    print(eveningEndsH)
+    print(eveningEndsM)
+
+    sql = ("SELECT  profiles.night_allowence_starts, profiles.nigh_allowence_ends FROM profiles Where profiles.id=1")
+    cur.execute(sql)
+    nigh_allowence = cur.fetchall()
+    print(nigh_allowence)
+    print("total",totalMinutes)
+    nightStartsH=int(getFirstTwo(nigh_allowence[0][0]))   #gets hours
+    nightStartsM=int(getThirdFourth(nigh_allowence[0][0])) #gets minutes
+    nightEndsH=int(getFirstTwo(nigh_allowence[0][1]))
+    nightEndsM=int(getFirstTwo(nigh_allowence[0][1]))
+
+    if eveningEndsH == 0:
+        eveningEndsH=23
+        if eveningEndsM == 0:
+            eveningEndsM =59
+
+    for i in range(int(totalMinutes) + 1):
+        if minutes >= 60:
+            hourr += 1
+            minutes = 0
+        if hourr >= 24:
+            hourr = 0
+            firsDayMinutes=i
+
+        gg = (datetime.time(hour=hourr, minute=minutes))
+        print("gg",gg)
+        #evening allowence
+        if gg >= (datetime.time(hour=eveningStartsH, minute=eveningStartsM)) and gg <= (datetime.time(hour=eveningEndsH, minute=eveningEndsM)):
+            print("ilta lisä: ", gg)
+            evening_allowenceH += 1
+            if breakStarts!="None" and breakEnds!="None":
+                if gg >= (datetime.time(hour=breakStartsH, minute=breakStartsM)) and gg <= (datetime.time(hour=breakEndsH, minute=breakEndsM)):
+                    evening_allowence_inside_break +=1
+
+        #night_allowence
+        if gg >= (datetime.time(hour=nightStartsH, minute=nightStartsM)) and gg <= (datetime.time(hour=nightEndsH, minute=nightEndsM)):
+            print("yö lisä: ", gg)
+            night_allowenceH += 1
+            if breakStarts!="None" and breakEnds!="None":
+                if gg >= (datetime.time(hour=breakStartsH, minute=breakStartsM)) and gg <= (datetime.time(hour=breakEndsH, minute=breakEndsM)):
+                    night_allowence_inside_break+=1
+        minutes += 1
+    if evening_allowenceH>0:
+        evening_allowenceH-=1
+    if night_allowenceH>0:
+        night_allowenceH-=1
+    print()
+    print("iltalisä: ", evening_allowenceH)
+    print("yölisä: ", night_allowenceH)
+
+    allowences.append(evening_allowenceH)
+    allowences.append(night_allowenceH)
+    allowences.append(firsDayMinutes)
+    allowences.append(evening_allowence_inside_break)
+    allowences.append(night_allowence_inside_break)
+    return allowences
+def dayNumbers(number):
+    searchDay={1:'Mon',2:'Tue',3:'Wed',4:'Thu',5:'Fri',6:'Sat',7:'Sun'}
+    try:
+        dayName = searchDay[number]
+    except:
+        dayName='unknown'
+
+    return dayName
+
+def dateParts(dateS):
+
+    xxxx = 0
+    z = 0
+    dateParts = []
+    for i in range(len(dateS)):
+        if dateS[i] == ".":
+            y = int(dateS[xxxx:i])
+            dateParts.append(y)
+            xxxx = i + 1
+        z += 1
+    y = int(dateS[xxxx:z])
+    dateParts.append(y)
+
+    dayy = datetime.datetime(dateParts[2], dateParts[1], dateParts[0])
+    weekDay=dayy.isoweekday()
+    weekDayName=dayNumbers(weekDay)
+    dateParts.append(weekDayName)
+    return dateParts
+
+def paydayINFO():
+    workDay=datee()
+    workDayParts=dateParts(workDay) # 0=day, 1=month, 2=year, 3=Day of the week
+    daysName=workDayParts[3]
+
+    print("Day is holiday or normal?")
+    dayMultiplier = int(input("1. Normal(1x), 2. Holiday(2x), 3. Custom: "))
+    if dayMultiplier==3:
+        dayMultiplier=float(input("Give days Multiplier(example: '1.5' :"))
+    working = input("You were working(xx.xx-xx.xx): ")
+
+
+
+    workingL=timeType(working)
+    workingC=timeTypeHourMinutes(working)
+
+    timeDiffminutes=timeDiff(workingL[0],workingL[1])
+    timeDiffhours=timeDiffminutes/60
+
+    sql = ("SELECT profiles.evening_allowence FROM profiles Where profiles.id=1")
+    cur.execute(sql)
+    evening_allowence=cur.fetchall()
+
+    sql= ("SELECT profiles.night_allowence FROM profiles Where profiles.id=1")
+    cur.execute(sql)
+    nigh_allowence=cur.fetchall()
+
+    hourr = workingC[0]
+    minutes = workingC[1]
+
+    allowenceS=allowences(workingC[0],workingC[1],timeDiffminutes) # 0= evening allowence minutes count and 1= night allowence minutes count and 2=firstDayMinutes 3=evening_inside break and 4=nigh inside break
+
+    eveningAM=allowenceS[0]
+    nightAM=allowenceS[1]
+    breaktimeDiffhours=0
+    breaktimeDiffminutes=0
+
+    breakL=None
+    breakC=None
+    if len(working)>11:
+        breakL=timeType(working[12:23])
+        breakC=timeTypeHourMinutes(working[12:23])
+        breaktimeDiffminutes=timeDiff(breakL[0],breakL[1])
+        breaktimeDiffhours=breaktimeDiffminutes/60
+
+        breakAllowenceS=allowences(breakC[0],breakC[1],breaktimeDiffminutes)
+
+        breakEallowenceM=breakAllowenceS[0]
+        breakNallowenceM=breakAllowenceS[1]
+        eveningAM-=breakEallowenceM
+        nightAM-=breakNallowenceM
+
+    eveningAH=eveningAM/60
+    nightAH=nightAM/60
+    evening_allowence_money=eveningAH*evening_allowence[0][0]
+    night_allowence_money=nightAH*nigh_allowence[0][0]
+
+    workedhours=timeDiffhours-breaktimeDiffhours
+    workedMinutes=timeDiffminutes-breaktimeDiffminutes
+
+    if allowenceS[2]>0 and dayMultiplier>1:
+        print("Your have worked between two days which one is inside holiday zone")
+        aaa=int(input("1. %s , 2. %s or 3. Both" % (dateOfWork,getDayString(1))))
+
+        if aaa==1:
+            hoursInholidays=allowenceS[2]/60
+            if breakL!=None:
+                allowenceS2=allowences(workingC[0],workingC[1],allowenceS[2],breakL[0],breakL[1])
+            else:
+                allowenceS2 = allowences(workingC[0], workingC[1], allowenceS[2])
+
+        elif aaa==2:
+            hoursInholidays = ((allowenceS[2]-timeDiffminutes) / 60)*(-1)
+            if breakL!=None:
+                allowenceS2=allowences(0,0,(hoursInholidays*60),breakL[0],breakL[1])
+            else:
+                allowenceS2 = allowences(0, 0, (hoursInholidays*60))
+        if aaa==3:
+            doubleEvening_allowenceM=eveningAM*dayMultiplier
+            doubleNigh_allowenceM=nightAM*dayMultiplier
+        else:
+            doubleEvening_allowenceM = (allowenceS2[0] - allowenceS2[3]) * dayMultiplier
+            doubleNigh_allowenceM = (allowenceS2[1] - allowenceS2[4]) * dayMultiplier
+
+
+
+
+
+    print("eveningAH",eveningAH)
+    print("nightAH",nightAH)
+
+
+
+
+
+
+
+
+
+
+def main():
+    print("hello")
+    paydayINFO()
+    #print(datee())
+
+
+
+main()
