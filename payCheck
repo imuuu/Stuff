@@ -139,6 +139,7 @@ def allowences(startAthour,startAtminutes,totalMinutes,breakStarts=None,breakEnd
     allowences.clear()
     hourr=int(startAthour)
     minutes=int(startAtminutes)
+
     print("hour",hourr)
     print("minutes",minutes)
 
@@ -173,12 +174,17 @@ def allowences(startAthour,startAtminutes,totalMinutes,breakStarts=None,breakEnd
     nightStartsH=int(getFirstTwo(nigh_allowence[0][0]))   #gets hours
     nightStartsM=int(getThirdFourth(nigh_allowence[0][0])) #gets minutes
     nightEndsH=int(getFirstTwo(nigh_allowence[0][1]))
-    nightEndsM=int(getFirstTwo(nigh_allowence[0][1]))
+    nightEndsM=int(getThirdFourth(nigh_allowence[0][1]))
+    print('nightStartsH',nightStartsH)
+    print('nightStartsM',nightStartsM)
+    print('nightEndsH',nightEndsH)
+    print('nightEndsM',nightEndsM)
 
     if eveningEndsH == 0:
         eveningEndsH=23
         if eveningEndsM == 0:
             eveningEndsM =59
+            evening_allowenceH+=1
 
     for i in range(int(totalMinutes) + 1):
         if minutes >= 60:
@@ -189,8 +195,10 @@ def allowences(startAthour,startAtminutes,totalMinutes,breakStarts=None,breakEnd
             firsDayMinutes=i
 
         gg = (datetime.time(hour=hourr, minute=minutes))
+
         #print("gg",gg)
         #evening allowence
+
         if gg >= (datetime.time(hour=eveningStartsH, minute=eveningStartsM)) and gg <= (datetime.time(hour=eveningEndsH, minute=eveningEndsM)):
             #print("ilta lisä: ", gg)
             evening_allowenceH += 1
@@ -200,7 +208,7 @@ def allowences(startAthour,startAtminutes,totalMinutes,breakStarts=None,breakEnd
 
         #night_allowence
         if gg >= (datetime.time(hour=nightStartsH, minute=nightStartsM)) and gg <= (datetime.time(hour=nightEndsH, minute=nightEndsM)):
-            #print("yö lisä: ", gg)
+            print("yö lisä: ", gg)
             night_allowenceH += 1
             if breakStarts!="None" and breakEnds!="None":
                 if gg >= (datetime.time(hour=breakStartsH, minute=breakStartsM)) and gg <= (datetime.time(hour=breakEndsH, minute=breakEndsM)):
@@ -270,6 +278,13 @@ def paydayINFO():
         dayMultiplier=1
     working = input("You were working(xx.xx-xx.xx): ")
 
+    if len(working)>12:
+        breakStartsS = working[12:17]  # s
+        breakEndsS = working[18:23]
+    else:
+        breakStartsS="noBreak"
+        breakEndsS="noBreak"
+
 
 
     workingL=timeType(working)
@@ -298,6 +313,7 @@ def paydayINFO():
 
     breakL=None
     breakC=None
+
     if len(working)>11:
         breakL=timeType(working[12:23])
         breakC=timeTypeHourMinutes(working[12:23])
@@ -308,13 +324,20 @@ def paydayINFO():
 
         breakEallowenceM=breakAllowenceS[0]
         breakNallowenceM=breakAllowenceS[1]
-        eveningAM-=breakEallowenceM
-        nightAM-=breakNallowenceM
-
-    eveningAH=eveningAM/60
-    nightAH=nightAM/60
-    evening_allowence_money=eveningAH*evening_allowence[0][0]
-    night_allowence_money=nightAH*nigh_allowence[0][0]
+        #eveningAM-=breakEallowenceM
+        #nightAM-=breakNallowenceM
+    if breakL != None:
+        allowenceX=allowences(workingC[0],workingC[1],timeDiffminutes,breakL[0],breakL[1])
+        breakE=allowenceX[3]
+        breakN=allowenceX[4]
+    else:
+        breakE=0
+        breakN=0
+    eveningAH=(eveningAM-breakE)/60
+    nightAH=(nightAM-breakN)/60
+    print("nightAH",nightAH)
+    evening_allowence_money=eveningAH*evening_allowenceResult[0][0]
+    night_allowence_money=nightAH*nigh_allowenceResult[0][0]
 
     workedhours=timeDiffhours-breaktimeDiffhours
     workedMinutes=timeDiffminutes-breaktimeDiffminutes
@@ -366,28 +389,56 @@ def paydayINFO():
     cur.execute(sql)
     payThings=cur.fetchall()
 
-    count=count2+1
-    dayMultiplier=dayMultiplier
-    dayOfWeek=daysName
-    workDate=workDay
+    count=count2+1              #i
+    dayMultiplier=dayMultiplier #f
+    dayOfWeek=daysName          #s
+    workDate=workDay            #s
     startAt=working[0:5]        #s
     EndAt=working[6:11]         #s
-    breakStarts=working[12:17]  #s
-    breakEnds=working[18:23]    #s
-    breakMin=breaktimeDiffminutes
+    breakStarts=breakStartsS #s
+    breakEnds=breakEndsS    #s
+    breakMin=breaktimeDiffminutes #i
     workedhour=workedhours
     workedminute=workedMinutes
     evening_allowence_hour=eveningAH
+    withDoubleE=doubleEvening_allowenceM/2/60
     evening_allowence=((eveningAH+((doubleEvening_allowenceM/dayMultiplier)/60))*evening_allowenceResult[0][0])
     night_allowence_hour=nightAH
-    night_allowence=((nightAH((doubleNigh_allowenceM/dayMultiplier)/60))*nigh_allowenceResult[0][0])
+    withDoubleN=doubleNigh_allowenceM/2/60
+    night_allowence=((nightAH+((doubleNigh_allowenceM/dayMultiplier)/60))*nigh_allowenceResult[0][0])
     dayMhours=doubleInholidaysH/dayMultiplier
     earnedTotal=((workedhours+dayMhours)*payThings[0][0])+night_allowence+evening_allowence
     withTax=earnedTotal*(1-payThings[0][1]/100)
     doublePaycode=aaa
 
+    print("Count",count)
+    print("dayMultiplier",dayMultiplier)
+    print("dayOfweek",dayOfWeek)
+    print("workdate",workDate)
+    print("starsAt",startAt)
+    print("endAt",EndAt)
+    print("breakStarts",breakStarts)
+    print("breaKEnds",breakEnds)
+    print("breakMin",breakMin)
+    print("workedHours",workedhour)
+    print("workedMinutes",workedminute)
+    print("Evening_allowence_hour",evening_allowence_hour)
+    print("wihtdoubleE",withDoubleE)
+    print('evening_allowence',evening_allowence)
+    print("night_allowence_hour",night_allowence_hour)
+    print('withdoubleN',withDoubleN)
+    print('night_allowence',night_allowence)
+    print('dayMhours',dayMhours)
+    print("earnedTotal",earnedTotal)
+    print('withTax',withTax)
+    print('doublePayCode',doublePaycode)
+    '''
+    sql = (("INSERT INTO days VALUES (%i,%f,%s,%s,%s,%s,%s,%s,%i,%f,%i,%f,%f,%f,%f,%f,%f,%f,%f,%f,%i)") % (count,dayMultiplier,dayOfWeek,workDate,startAt,EndAt,breakStarts,breakEnds,breakMin,workedhour,workedminute,evening_allowence_hour,withDoubleE,evening_allowence,
+                                                                                                     night_allowence_hour,withDoubleN,night_allowence,dayMhours,earnedTotal,withTax,doublePaycode))
+    cur.execute(sql)
 
-
+    conn.commit()
+    '''
 
 
 
