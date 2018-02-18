@@ -34,10 +34,12 @@ def datee():
         datee=input("Give date (dd.mm.year): ")
 
     if x==0:
+        dateOfWork = datee
         dateX=datee.strftime('%d.%m.%Y')
     else:
+        dateOfWork=datetime.datetime.strptime(datee,'%d.%m.%Y')
         dateX=datee
-    dateX=dateOfWork
+
     return dateX
 def getDayString(futureOrPast):
     global dateOfWork
@@ -187,10 +189,10 @@ def allowences(startAthour,startAtminutes,totalMinutes,breakStarts=None,breakEnd
             firsDayMinutes=i
 
         gg = (datetime.time(hour=hourr, minute=minutes))
-        print("gg",gg)
+        #print("gg",gg)
         #evening allowence
         if gg >= (datetime.time(hour=eveningStartsH, minute=eveningStartsM)) and gg <= (datetime.time(hour=eveningEndsH, minute=eveningEndsM)):
-            print("ilta lisä: ", gg)
+            #print("ilta lisä: ", gg)
             evening_allowenceH += 1
             if breakStarts!="None" and breakEnds!="None":
                 if gg >= (datetime.time(hour=breakStartsH, minute=breakStartsM)) and gg <= (datetime.time(hour=breakEndsH, minute=breakEndsM)):
@@ -198,7 +200,7 @@ def allowences(startAthour,startAtminutes,totalMinutes,breakStarts=None,breakEnd
 
         #night_allowence
         if gg >= (datetime.time(hour=nightStartsH, minute=nightStartsM)) and gg <= (datetime.time(hour=nightEndsH, minute=nightEndsM)):
-            print("yö lisä: ", gg)
+            #print("yö lisä: ", gg)
             night_allowenceH += 1
             if breakStarts!="None" and breakEnds!="None":
                 if gg >= (datetime.time(hour=breakStartsH, minute=breakStartsM)) and gg <= (datetime.time(hour=breakEndsH, minute=breakEndsM)):
@@ -208,6 +210,10 @@ def allowences(startAthour,startAtminutes,totalMinutes,breakStarts=None,breakEnd
         evening_allowenceH-=1
     if night_allowenceH>0:
         night_allowenceH-=1
+    if breakStarts != "None" and breakEnds != "None" and evening_allowence_inside_break>0:
+        evening_allowence_inside_break -= 1
+    if breakStarts != "None" and breakEnds != "None" and night_allowence_inside_break > 0:
+        night_allowence_inside_break -= 1
     print()
     print("iltalisä: ", evening_allowenceH)
     print("yölisä: ", night_allowenceH)
@@ -249,6 +255,8 @@ def dateParts(dateS):
 
 def paydayINFO():
     workDay=datee()
+    print(workDay)
+
     workDayParts=dateParts(workDay) # 0=day, 1=month, 2=year, 3=Day of the week
     daysName=workDayParts[3]
 
@@ -256,6 +264,10 @@ def paydayINFO():
     dayMultiplier = int(input("1. Normal(1x), 2. Holiday(2x), 3. Custom: "))
     if dayMultiplier==3:
         dayMultiplier=float(input("Give days Multiplier(example: '1.5' :"))
+    elif dayMultiplier==2:
+        dayMultiplier=2
+    else:
+        dayMultiplier=1
     working = input("You were working(xx.xx-xx.xx): ")
 
 
@@ -268,11 +280,11 @@ def paydayINFO():
 
     sql = ("SELECT profiles.evening_allowence FROM profiles Where profiles.id=1")
     cur.execute(sql)
-    evening_allowence=cur.fetchall()
+    evening_allowenceResult=cur.fetchall()
 
     sql= ("SELECT profiles.night_allowence FROM profiles Where profiles.id=1")
     cur.execute(sql)
-    nigh_allowence=cur.fetchall()
+    nigh_allowenceResult=cur.fetchall()
 
     hourr = workingC[0]
     minutes = workingC[1]
@@ -306,7 +318,11 @@ def paydayINFO():
 
     workedhours=timeDiffhours-breaktimeDiffhours
     workedMinutes=timeDiffminutes-breaktimeDiffminutes
-
+    print("breaktimeDiffhour",breaktimeDiffhours)
+    doubleEvening_allowenceM=0
+    doubleNigh_allowenceM=0
+    doubleInholidaysH=0
+    aaa=0
     if allowenceS[2]>0 and dayMultiplier>1:
         print("Your have worked between two days which one is inside holiday zone")
         aaa=int(input("1. %s , 2. %s or 3. Both" % (dateOfWork,getDayString(1))))
@@ -334,14 +350,41 @@ def paydayINFO():
             doubleEvening_allowenceM = (allowenceS2[0] - allowenceS2[3]) * dayMultiplier
             doubleNigh_allowenceM = (allowenceS2[1] - allowenceS2[4]) * dayMultiplier
 
-
+    print(doubleEvening_allowenceM)
+    print(doubleNigh_allowenceM)
+    print(doubleInholidaysH)
 
 
 
     print("eveningAH",eveningAH)
     print("nightAH",nightAH)
+    sql=("SELECT MAX(days.count) FROM days")
+    cur.execute(sql)
+    count2=cur.fetchall()[0][0]
 
+    sql = ("SELECT profiles.hourly_payment, profiles.taxProsent FROM profiles")
+    cur.execute(sql)
+    payThings=cur.fetchall()
 
+    count=count2+1
+    dayMultiplier=dayMultiplier
+    dayOfWeek=daysName
+    workDate=workDay
+    startAt=working[0:5]        #s
+    EndAt=working[6:11]         #s
+    breakStarts=working[12:17]  #s
+    breakEnds=working[18:23]    #s
+    breakMin=breaktimeDiffminutes
+    workedhour=workedhours
+    workedminute=workedMinutes
+    evening_allowence_hour=eveningAH
+    evening_allowence=((eveningAH+((doubleEvening_allowenceM/dayMultiplier)/60))*evening_allowenceResult[0][0])
+    night_allowence_hour=nightAH
+    night_allowence=((nightAH((doubleNigh_allowenceM/dayMultiplier)/60))*nigh_allowenceResult[0][0])
+    dayMhours=doubleInholidaysH/dayMultiplier
+    earnedTotal=((workedhours+dayMhours)*payThings[0][0])+night_allowence+evening_allowence
+    withTax=earnedTotal*(1-payThings[0][1]/100)
+    doublePaycode=aaa
 
 
 
