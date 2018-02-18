@@ -346,6 +346,10 @@ def paydayINFO():
     doubleNigh_allowenceM=0
     doubleInholidaysH=0
     aaa=0
+    if dayMultiplier>1:
+        doubleInholidaysH = workedhours * dayMultiplier
+        doubleEvening_allowenceM = eveningAM * dayMultiplier
+        doubleNigh_allowenceM = nightAM * dayMultiplier
     if allowenceS[2]>0 and dayMultiplier>1:
         print("Your have worked between two days which one is inside holiday zone")
         aaa=int(input("1. %s , 2. %s or 3. Both" % (dateOfWork,getDayString(1))))
