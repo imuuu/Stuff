@@ -436,19 +436,23 @@ def paydayINFO():
     print("earnedTotal",earnedTotal)
     print('withTax',withTax)
     print('doublePayCode',doublePaycode)
-    '''
-    sql = (("INSERT INTO days VALUES (%i,%f,%s,%s,%s,%s,%s,%s,%i,%f,%i,%f,%f,%f,%f,%f,%f,%f,%f,%f,%i)") % (count,dayMultiplier,dayOfWeek,workDate,startAt,EndAt,breakStarts,breakEnds,breakMin,workedhour,workedminute,evening_allowence_hour,withDoubleE,evening_allowence,
-                                                                                                     night_allowence_hour,withDoubleN,night_allowence,dayMhours,earnedTotal,withTax,doublePaycode))
-    cur.execute(sql)
+    #INSERT INTO days VALUES (3,2,"Sun","18.02.2018","18.30","00.07","noBreak","noBreak",0,5.61666,337.0,5.5,5.5,11.11,0.116666,0.0,0.245000,5.5,127.0795000,123.267115,1)
 
+    #sql = (("INSERT INTO days VALUES (%i,%f,%s,%s,%s,%s,%s,%s,%i,%f,%i,%f,%f,%f,%f,%f,%f,%f,%f,%f,%i)"% (count,dayMultiplier,dayOfWeek,workDate,startAt,EndAt,breakStarts,breakEnds,breakMin,workedhour,workedminute,evening_allowence_hour,withDoubleE,evening_allowence,night_allowence_hour,withDoubleN,night_allowence,dayMhours,earnedTotal,withTax,doublePaycode)) )
+    sql=("INSERT INTO days VALUES ("+str(count)+","+str(dayMultiplier)+",'"+dayOfWeek+"','"+workDate+"','"+startAt+"','"+EndAt+"','"+breakStarts+"','"+breakEnds+"',"+str(breakMin)+","+str(workedhour)+","+str(workedminute)+","+str(evening_allowence_hour)+","+str(withDoubleE)+","+str(evening_allowence)+","+str(night_allowence_hour)+","+str(withDoubleN)+","+str(night_allowence)+","+str(dayMhours)+","+str(earnedTotal)+","+str(withTax)+","+str(doublePaycode)+")")
+    cur.execute(sql)
+    print(sql)
     conn.commit()
-    '''
+
+
 
 
 
 
 
 def main():
+
+
     print("hello")
     paydayINFO()
     #print(datee())
