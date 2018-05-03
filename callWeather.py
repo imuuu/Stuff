@@ -9,12 +9,16 @@ row1=soup.find('div', class_='mid local-weather-forecast meteogram selected tabl
 asteet=row1.find('tr', class_="meteogram-temperatures")
 kellonajat=row1.find('tr', class_="meteogram-times")
 paivat=row1.find('tr', class_="meteogram-dates")
+symbs=row1.find('tr',class_='meteogram-weather-symbols')
+sun=soup.find('div', class_='celestial-status-text')
 
 days=[]
 times=[]
 temperatures=[]
+symbols=[]
 daysAccurate=[]
-
+sunRise=[]
+allInone=[]
 
 for temp2 in asteet.find_all('td'):
     temperatures.append(temp2.text)
@@ -25,9 +29,18 @@ for time2 in kellonajat.find_all('td'):
 for day2 in paivat.find_all('td'):
     days.append(day2.text)
 
-allInone=[]
+for symbol2 in symbs.find_all('div'):
+    symbols.append(symbol2.attrs['title'])
 
+for sun2 in sun.find_all('span'):
+    sunRise.append(sun2.attrs['title'])
     
+#for i in temperatures:
+    
+#print(sun.prettify())
+#print(sunRise)
+def sunRisee():
+    return sunRise  
 def weather():
     lastTime=times[0]
     dayValue=0
@@ -40,7 +53,7 @@ def weather():
         if int(lastTime[0])<=int(atTime[0]):
             daysAccurate.append(days[dayValue])
             if xxx==0:
-                todays+='klo '+str(atTime)+' temp:'+str(temperatures[x])+'\n'
+                todays+='klo '+str(atTime)+' =>'+str(temperatures[x])+str(symbols[x])+'\n'
             #infoDays[days[dayValue]]=[atTime,temperatures[x]]
             
         else:
@@ -58,6 +71,7 @@ def weather():
     allInone.append(times)
     allInone.append(temperatures)
     allInone.append(todays)
+    allInone.append(symbols)
     return allInone   
 
 
